@@ -1,47 +1,38 @@
+#property copyright "Forex Software Ltd."
+#property version   "2.18"
+#property strict
+
 #include "../helpers/functions.mqh"
 
-input int N = 3; // Periodo de la media exponencial
+
+input int on_order_open_IMA_periods = 3; // Periodo para IMA de apertura de orden
+input int on_order_close_IMA_periods = 3; // Periodo para IMA de cierre de orden
 input double lotSize = 0.1; // Tamaño de lote para las órdenes
 
 double orderResults[]; // Lista para almacenar los resultados de las órdenes
 int prevBarCount = 0; // Número de velas en el tick anterior
 string fileName = "OrderResults.txt"; // Nombre del archivo para guardar los resultados
+// write  in the file the number of the order and the final balance
 
-// Función para verificar la condición de rompimiento al alza
-bool RompimientoAlAlza() {
-    double openPrice = iOpen(Symbol(), 0, 1);
-    double closePrice = iClose(Symbol(), 0, 1);
-    double emaValue = ima(N, 1);
 
-    return openPrice < emaValue && closePrice > emaValue;
-}
 
-// Función para verificar la condición de rompimiento a la baja
-bool RompimientoALaBaja() {
-    double openPrice = iOpen(Symbol(), 0, 1);
-    double closePrice = iClose(Symbol(), 0, 1);
-    double emaValue = ima(N, 1);
-
-    return openPrice > emaValue && closePrice < emaValue;
-}
-
-// Función para abrir una posición de compra
-void OpenBuyOrder() {
-    double price = Ask;
-    int ticket = OrderSend(Symbol(), OP_BUY, lotSize, price, 2, 0, 0, "", 0, clrNONE);
+// Función para abrir una posición de ventaE
+void OpenSellOrder(){
+    double price = Bid;
+    int ticket = OrderSend(Symbol(), OP_SELL, lotSize, price, 2, 0, 0, "", 0, clrNONE);
     if (ticket > 0) {
         int size = ArraySize(orderResults);
         ArrayResize(orderResults, size + 1);
-        orderResults[size] = price;
+        orderResults[size] = -price;
     }
 }
 
-// Función para cerrar una posición de compra
-void CloseBuyOrder() {
-    double price = Bid;
+// Función para cerrar una posición de venta
+void CloseSellOrder() {
+    double price = Ask;
     for (int i = OrdersTotal() - 1; i >= 0; i--) {
         if (OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) {
-            if (OrderType() == OP_BUY) {
+            if (OrderType() == OP_SELL) {
                 double balanceBeforeClose = AccountBalance();
                 OrderClose(OrderTicket(), OrderLots(), price, 2, clrNONE);
                 double balanceAfterClose = AccountBalance();
@@ -49,11 +40,10 @@ void CloseBuyOrder() {
 
                 int size = ArraySize(orderResults);
                 ArrayResize(orderResults, size + 1);
-                orderResults[size] = -price;
+                orderResults[size] = price;
 
                 string message = "Orden cerrada. Balance de la orden: $" + DoubleToString(orderBalance, 2);
                 MessageBox(message, "Cierre de Orden #" + IntegerToString(OrderTicket()), MB_ICONINFORMATION);
-
             }
         }
     }
@@ -61,17 +51,18 @@ void CloseBuyOrder() {
 
 // Función para verificar la condición en cada tick
 void OnTick() {
+    write_on_file(fileName, "OrderResults");
     int currentBarCount = Bars;
     if (currentBarCount > prevBarCount) {
         Print("---------------");
         // Se ha formado una nueva vela, ejecutar el código actual
-        if (RompimientoAlAlza()) {
-            Print("RompimientoAlAlza");
-            OpenBuyOrder();
+        if (RompimientoALaBaja( on_order_open_IMA_periods)) {
+            Print("RompimientoALaBaja");
+            OpenSellOrder();
         }
 
-        if (RompimientoALaBaja()) {
-            CloseBuyOrder();
+        if (RompimientoAlAlza( on_order_close_IMA_periods)) {
+            CloseSellOrder();
         }
     }
 
@@ -79,8 +70,17 @@ void OnTick() {
 }
 
 // Función de inicio del robot
-void OnInit() {
-    ArrayResize(orderResults, 0);
-    prevBarCount = Bars; // Inicializar prevBarCount con el número actual de velas
+int OnInit() {
     OnTick(); // Ejecutar una vez al inicio para asegurarse de que se cumpla la condición inicial
+    return 1;
 }
+
+double GetPipValue()
+  {
+   return _Digits == 4 || _Digits == 5 ? 0.0001
+        : _Digits == 2 || _Digits == 3 ? 0.01
+                        : _Digits == 1 ? 0.1 : 1;
+  }
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+

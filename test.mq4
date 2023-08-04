@@ -31,8 +31,6 @@ class Carro{
 
 int OnInit(){
   Print("hola mundo");
-  Carro carro(6); 
-  Print(carro.ruedas);
-  carro.avanzar();
+  OrderSend(_Symbol, OP_SELL, 0.1, Bid, 2, 10,0);
   return(1);
 }
