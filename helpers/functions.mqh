@@ -44,3 +44,51 @@ double CalculatePipsDistance(double price1, double price2)
     return pipsDistance;
 }
 
+
+class Order {
+public:
+    int ticket;
+    int magicNumber;
+    string symbol;
+    int openTime;
+    int closeTime;
+    double openPrice;
+    double closePrice;
+    double lots;
+    double stopLoss;
+    double takeProfit;
+    double commission;
+    double swap;
+    double profit;
+    int type;
+    int state;
+    int deviation;
+    string comment;
+
+    // Constructor
+    Order(int t) {
+        ticket = t;
+
+        if (OrderSelect(ticket, SELECT_BY_TICKET)) {
+            magicNumber = OrderMagicNumber();
+            symbol = OrderSymbol();
+            openTime = OrderOpenTime();
+            closeTime = OrderCloseTime();
+            openPrice = OrderOpenPrice();
+            closePrice = OrderClosePrice();
+            lots = OrderLots();
+            stopLoss = OrderStopLoss();
+            takeProfit = OrderTakeProfit();
+            commission = OrderCommission();
+            swap = OrderSwap();
+            profit = OrderProfit();
+            type = OrderType();
+            state = OrderType();
+            deviation = OrderType();
+            comment = OrderComment();
+        } else {
+            Print("No se pudo seleccionar la orden con el ticket ", ticket);
+        }
+    }
+};
+
